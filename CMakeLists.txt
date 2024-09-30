@@ -2,7 +2,7 @@ project(cpp)
 
 cmake_minimum_required(VERSION 3.16)
 
-set(PDFIO_ROOT "/home/sergv/Documents/build/pdfio")
+set(PDFIO_ROOT "/home/sergv/Documents/install/pdfio")
 set(STB_ROOT "/home/sergv/Documents/install/stb")
 
 add_library(pdfio STATIC IMPORTED)
