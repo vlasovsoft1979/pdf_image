@@ -1,0 +1,32 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux_default",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "binaryDir": "/home/sergv/Documents/build/pdf_image",
+      "cacheVariables": {
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    }, 
+    {
+      "name": "linux_system",
+      "inherits": "linux_default",
+      "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ]
+}
+
