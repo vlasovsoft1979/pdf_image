@@ -41,21 +41,18 @@ public:
     }
     void Extract(void* buffer) override
     {
-        // todo: unique_ptr
-        pdfio_stream_t* stream = pdfioObjOpenStream(m_obj, true);
+        std::unique_ptr<pdfio_stream_t, decltype(&pdfioStreamClose)> streamHolder{ pdfioObjOpenStream(m_obj, true), pdfioStreamClose };
         switch(m_colorSpace)
         {
         case ColorSpace::DeviceGray:
-            ExtractGray(stream, buffer);
+            ExtractGray(streamHolder.get(), buffer);
             break;
         case ColorSpace::DeviceRGB:
-            ExtractRGB(stream, buffer);
+            ExtractRGB(streamHolder.get(), buffer);
             break;
         default:
             throw std::runtime_error("Unknown color space");
         }
-        // todo: unique_ptr
-        pdfioStreamClose(stream);
     }
 private:
     void ExtractGray(pdfio_stream_t* stream, void* buffer);
