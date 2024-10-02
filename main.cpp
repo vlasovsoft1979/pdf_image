@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 #include "i_image_stream.h"
 #include "pdf_image_extractor.h"
@@ -11,6 +12,19 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include <stb_image_write.h>
+
+std::vector<char> read_whole_file(const char* filename)
+{
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    std::vector<char> result(size);
+    if (!file.read(result.data(), result.size()))
+    {
+        throw std::runtime_error("Failed to read PDF file!");
+    }
+    return result;
+}
 
 int main(int argc, char* argv[])
 {
@@ -24,7 +38,14 @@ int main(int argc, char* argv[])
         const unsigned int MAX_IMAGE_SIZE = 1000000;
         std::unique_ptr<uint8_t[]> buf(new uint8_t[MAX_IMAGE_SIZE]);
         const char* pdf_file_name = argv[1];
+#if 0
+        // From file
         IImageExtractorPtr extractor = CreatePfdImageExtractor(pdf_file_name);
+#else
+        // From memory
+        auto data = read_whole_file(pdf_file_name);
+        IImageExtractorPtr extractor = CreatePfdImageExtractor(data.data(), data.size());
+#endif
         auto count = extractor->GetImagesCount();
         std::cout << "Found " << count << " images" << std::endl;
         std::cout << "Extracting images..." << std::endl;

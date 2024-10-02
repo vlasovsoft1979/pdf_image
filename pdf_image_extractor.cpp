@@ -123,7 +123,7 @@ class PdfImageExtractor: public IImageExtractor
 {
 public:
     PdfImageExtractor(const char* file_name);
-    ~PdfImageExtractor();
+    PdfImageExtractor(void* buffer, size_t buf_size);
     virtual size_t GetImagesCount() const override
     {
         return images.size();
@@ -136,12 +136,12 @@ protected:
     void Process();
     void AddStream(std::unique_ptr<IImageStream> stream);
 protected:
-    pdfio_file_t* pdf;
+    std::unique_ptr<pdfio_file_t, decltype(&pdfioFileClose)> pdf;
     std::vector<std::unique_ptr<IImageStream>> images;
 };
 
 PdfImageExtractor::PdfImageExtractor(const char* file_name)
-    : pdf(pdfioFileOpen(file_name, nullptr, nullptr, nullptr, nullptr))
+    : pdf(pdfioFileOpen(file_name, nullptr, nullptr, nullptr, nullptr), pdfioFileClose)
 {
     if (!pdf)
     {
@@ -150,9 +150,14 @@ PdfImageExtractor::PdfImageExtractor(const char* file_name)
     Process();
 }
 
-PdfImageExtractor::~PdfImageExtractor()
+PdfImageExtractor::PdfImageExtractor(void* buffer, size_t buf_size)
+    : pdf(pdfioMemoryFileOpen(buffer, buf_size, nullptr, nullptr, nullptr, nullptr), pdfioFileClose)
 {
-    pdfioFileClose(pdf);
+    if (!pdf)
+    {
+        throw std::runtime_error("Error opening PDF file");
+    }
+    Process();
 }
 
 static StreamType GetStreamType(const char* str)
@@ -315,7 +320,7 @@ void PdfImageExtractor::Process()
 {
     std::map<pdfio_obj_t*, ImageParams> images;
 
-    pdfio_dict_t* catalog = pdfioFileGetCatalog(pdf);
+    pdfio_dict_t* catalog = pdfioFileGetCatalog(pdf.get());
     if (!catalog)
         return;
 
@@ -325,10 +330,10 @@ void PdfImageExtractor::Process()
 
     CollectImages(pages, images);
 
-    auto pagesCount = pdfioFileGetNumPages(pdf);
+    auto pagesCount = pdfioFileGetNumPages(pdf.get());
     for (auto pageNo = 0u; pageNo < pagesCount; ++pageNo)
     {
-        pdfio_obj_t* page = pdfioFileGetPage(pdf, pageNo);
+        pdfio_obj_t* page = pdfioFileGetPage(pdf.get(), pageNo);
         if (!page)
             continue;
 
@@ -361,4 +366,9 @@ void PdfImageExtractor::AddStream(std::unique_ptr<IImageStream> stream)
 IImageExtractorPtr CreatePfdImageExtractor(const char* file_name)
 {
     return std::unique_ptr<IImageExtractor>(new PdfImageExtractor(file_name));
+}
+
+IImageExtractorPtr CreatePfdImageExtractor(void* buffer, size_t buf_size)
+{
+    return std::unique_ptr<IImageExtractor>(new PdfImageExtractor(buffer, buf_size));
 }
